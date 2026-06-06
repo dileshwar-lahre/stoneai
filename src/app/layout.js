@@ -9,13 +9,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      {/* 
-         Body me 'bg-black' isliye dala hai taaki har page (login bhi) 
-         black rahe. 'antialiased' font ko saaf dikhayega.
+      {/* 1. 'suppressHydrationWarning' jodh diya hai taaki browser extensions (cz-shortcut) ki wajah se build crash na ho.
+          2. Layout structure ekdum clean lock kar diya hai.
       */}
-      <body className="bg-black text-white antialiased">
-        {children}
-    <Navbar/>
+      <body className="bg-black text-white antialiased" suppressHydrationWarning>
+        <Navbar />
+        <main>
+          {children}
+        </main>
       </body>
     </html>
   )
