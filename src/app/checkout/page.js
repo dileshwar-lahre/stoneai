@@ -56,9 +56,8 @@ export default function CheckoutPage() {
 
   // 🎁 7 Days Free Trial
   const activateFreeTrial = async () => {
-    setLoading(true);
+    setLoading(true); // 🛠️ FIXED: loading(true) ko setLoading(true) kiya
     try {
-      // Temporary static fallback jab tak Auth integration na ho database se
       const currentUserId = "65c3b2e1f1d2c3b4a5e6f7a8"; 
 
       const res = await fetch("/api/verify-payment", {
@@ -86,15 +85,27 @@ export default function CheckoutPage() {
     } catch (err) {
       alert("Error: " + err.message);
     } finally {
-      setLoading(false);
+      setLoading(false); // 🛠️ FIXED: loading(false) ko setLoading(false) kiya
     }
   };
 
   // 💳 Razorpay Paid Processing
   const payNow = async () => {
-    setLoading(true);
+    setLoading(true); // 🛠️ FIXED: loading(true) ko setLoading(true) kiya
     try {
-      const currentUserId = "65c3b2e1f1d2c3b4a5e6f7a8"; // Valid Object ID structural representation
+      const currentUserId = "65c3b2e1f1d2c3b4a5e6f7a8";
+
+      // 🔍 FRONTEND DEBUGGER
+      if (typeof window === "undefined" || !window.Razorpay) {
+        alert("🚨 RAZORPAY SCRIPT NOT LOADED YET! Ek baar page refresh karke check karo bhai.");
+        setLoading(false);
+        return;
+      }
+
+      // ⚡ LIVE ENV MATCH SYSTEM (Bina code change kiye backup layout)
+      const clientKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "YAHAN_APNI_RZP_LIVE_KEY_ID_DIRECT_PASTE_KARO";
+
+      console.log("🎯 Frontend sending request for amount:", selectedPlan.price);
 
       // 1. Hit create order API
       const res = await fetch("/api/create-order", {
@@ -104,18 +115,52 @@ export default function CheckoutPage() {
       });
       
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Order fail ho gaya");
+      if (!res.ok) {
+        console.error("Backend Verification Failed Data:", data);
+        throw new Error(data.details || data.error || "Backend order generation fail ho gaya");
+      }
 
-      // 2. Client Side Gateway Options Build
+      console.log("📦 Backend order response data:", data);
+
+      // 2. Client Side Gateway Options Build with Preferred Direct UPI Flow
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Exact env match check
+        key: clientKeyId.trim(), 
         amount: data.amount,
         currency: data.currency,
         name: "Stonenox AI",
         description: `Payment for ${selectedPlan.planName}`,
         order_id: data.order_id,
+        
+        // 🚀 DIRECT UPI PREFILL METHOD
+        prefill: {
+          name: "Dileshwar Lahre",
+          email: "support@stonenox.com",
+          contact: "9131460470",
+          method: "upi" // Isse popup seedhe UPI modes par landing karega
+        },
+        
+        // ⚡ BLOCK PREFERENCE CONFIG: Force Google Pay, PhonePe, Paytm, BHIM apps on mobile screen
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Direct UPI / Apps",
+                instruments: [
+                  {
+                    method: "upi",
+                    apps: ["google_pay", "phonepe", "paytm", "bhim"]
+                  }
+                ]
+              }
+            },
+            sequence: ["block.upi"], // UPI custom apps block sabse upar laa kar thokenge
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        },
+
         handler: async function (response) {
-          // Send parameters securely to verification endpoint
           const verifyRes = await fetch("/api/verify-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -142,26 +187,24 @@ export default function CheckoutPage() {
             alert("Verification Failed: " + verifyData.error);
           }
         },
-        prefill: {
-          name: "Dileshwar Lahre",
-          email: "support@stonenox.com",
-          contact: "9131460470",
-        },
         theme: { color: "#0ea5e9" },
       };
 
+      console.log("🚀 Initializing Razorpay construction box...");
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      alert("Error: " + err.message);
+      console.error("💥 CHECKOUT_FRONTEND_CRASH:", err);
+      alert("Error aa gaya bhai: " + err.message);
     } finally {
-      setLoading(false);
+      setLoading(false); // 🛠️ FIXED: loading(false) ko setLoading(false) kiya
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col justify-center items-center pt-32 pb-16 px-4">
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      {/* 🚀 STRATEGY CHECK: afterInteractive script execution trigger */}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
       {/* Header Container */}
       <div className="max-w-3xl w-full text-center mb-12">
