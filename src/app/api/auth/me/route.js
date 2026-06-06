@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { connectDB } from "../../../../../lib/mongodb";
-import User from "../../../../../models/User";
-
-import { verifyToken } from "../../../../../lib/auth";
+// 🛠️ Pure relative paths - Next.js compiler isko mana nahi kar sakta
+import { connectDB } from "../../../../lib/mongodb";
+import User from "../../../../models/User";
+import { verifyToken } from "../../../../lib/auth";
 
 export async function GET() {
   try {

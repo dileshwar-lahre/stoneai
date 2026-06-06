@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { connectToDB } from "@/utils/database"; 
-import Subscription from "@/models/Subscription";
+
+// 🛠️ 3 level step-back structure
+import { connectDB } from "../../../lib/mongodb"; 
+import Subscription from "../../../models/Subscription";
 
 export async function POST(request) {
   try {
