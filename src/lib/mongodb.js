@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI missing in .env.local");
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
 
 let cached = global.mongoose;
@@ -12,13 +12,29 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+// 🔥 CRITICAL FIX: 'export async function connectDB' likhna zaroori hai 
+// Taaki routes me { connectDB } named import kaam kar sake!
 export async function connectDB() {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  cached.conn = await cached.promise;
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+      return mongooseInstance;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
   return cached.conn;
 }
