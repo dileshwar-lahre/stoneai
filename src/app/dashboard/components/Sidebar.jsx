@@ -30,7 +30,7 @@ import {
 
 import { FcGoogle } from "react-icons/fc";
 
-// Reusable Sidebar Link Component (Premium Dark Mode Layout)
+// Reusable Sidebar Link Component
 function SidebarLink({ href, icon, name, count }) {
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -58,11 +58,15 @@ function SidebarLink({ href, icon, name, count }) {
   );
 }
 
-// Reusable Channel/Integration Link Component (Premium Dark Mode Layout)
+// Channel Link Component with Hover Disconnect Mode
 function ChannelLink({ icon, name, status, onClick }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <div 
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-950/40 border border-neutral-900 hover:border-neutral-800 hover:bg-neutral-900/30 transition-all duration-300 cursor-pointer group"
     >
       <div className="flex items-center gap-3">
@@ -74,8 +78,18 @@ function ChannelLink({ icon, name, status, onClick }) {
 
       <div className="flex items-center gap-1.5">
         <div className={`w-1.5 h-1.5 rounded-full ${status === "Active" ? "bg-emerald-500 animate-pulse" : "bg-neutral-700"}`} />
-        <span className={`text-[9px] uppercase font-black tracking-widest ${status === "Active" ? "text-emerald-400" : "text-neutral-500"}`}>
-          {status === "Active" ? "Linked" : "Setup"}
+        <span className={`text-[9px] uppercase font-black tracking-widest ${
+          status === "Active" 
+            ? isHovered 
+              ? "text-red-500 font-extrabold" 
+              : "text-emerald-400" 
+            : "text-neutral-500"
+        }`}>
+          {status === "Active" 
+            ? isHovered 
+              ? "Disconnect" 
+              : "Linked" 
+            : "Setup"}
         </span>
       </div>
     </div>
@@ -93,12 +107,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   
   const [googleAdsStatus, setGoogleAdsStatus] = useState("Setup");
+  const [facebookStatus, setFacebookStatus] = useState("Setup"); 
   const [planName, setPlanName] = useState("Standard Tier");
 
+  // State Sync Effect (Safe & Fixed)
   useEffect(() => {
     setMounted(true);
     
-    const storedSubscription = localStorage.getItem("subscription");
+    const storedSubscription = localStorage.getItem("digital_subscription");
     if (storedSubscription) {
       try {
         const parsed = JSON.parse(storedSubscription);
@@ -110,8 +126,36 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get("google_ads") === "connected") {
+      const googleParam = urlParams.get("google_ads");
+      const facebookParam = urlParams.get("facebook");
+
+      const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return null;
+      };
+
+      // Google Sync
+      const isGoogleCookieActive = getCookie("google_ads_status") === "connected";
+      if (googleParam === "connected" || isGoogleCookieActive) {
         setGoogleAdsStatus("Active");
+      } else {
+        setGoogleAdsStatus("Setup");
+      }
+
+      // Facebook Sync (Persistent Cache Protection)
+      const isFbInCache = localStorage.getItem("fb_connected") === "true";
+      if (facebookParam === "connected") {
+        localStorage.setItem("fb_connected", "true");
+        setFacebookStatus("Active");
+      } else if (facebookParam === "disconnected") {
+        localStorage.removeItem("fb_connected");
+        setFacebookStatus("Setup");
+      } else if (isFbInCache) {
+        setFacebookStatus("Active");
+      } else {
+        setFacebookStatus("Setup");
       }
     }
   }, [pathname]);
@@ -133,8 +177,24 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     if (googleAdsStatus === "Active") {
       router.push("/dashboard/analytics");
     } else {
-      console.log("🚀 Hard forcing native window navigation to bypass RSC fetch...");
-      window.location.assign("/api/auth/google-ads/connect");
+      window.location.assign("/api/auth/google-ads/connect?trigger=manual");
+    }
+  };
+
+  // Facebook Connection + Disconnection Handler Loop
+  const handleFacebookClick = (e) => {
+    e.preventDefault();
+    
+    if (facebookStatus === "Active") {
+      if (confirm("Kya aap sach me Facebook connection hatana chahte hain?")) {
+        localStorage.removeItem("fb_connected");
+        setFacebookStatus("Setup");
+        router.push("/dashboard");
+        console.log("❌ Facebook node context purged.");
+      }
+    } else {
+      console.log("🚀 Initializing Facebook Authorization Stream...");
+      window.location.assign("/api/auth/facebook/connect");
     }
   };
 
@@ -148,7 +208,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <>
-      {/* Sidebar Toggle Trigger Button (Lower Top Position) */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -158,13 +217,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </button>
       )}
 
-      {/* Main Premium Velvet Sidebar Container */}
       <aside
         className={`fixed left-6 top-36 z-[60] h-[calc(100vh-170px)] w-72 bg-[#000000] border border-neutral-900 rounded-[2rem] shadow-2xl overflow-hidden transition-all duration-300 ease-in-out flex flex-col ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0"
         }`}
       >
-        {/* Sidebar Brand Header */}
         <div className="h-20 border-b border-neutral-900 flex items-center justify-between px-6 shrink-0 bg-neutral-950/30">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-center text-blue-500">
@@ -180,7 +237,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </button>
         </div>
 
-        {/* Client Management Dropdown */}
         {userRole === "agency" && (
           <div className="px-4 pt-4 border-b border-neutral-900 pb-4 shrink-0 bg-neutral-950/10">
             <p className="text-[9px] font-black text-neutral-500 uppercase tracking-[1.5px] mb-2 px-1">Active Pipeline Unit</p>
@@ -217,7 +273,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </div>
         )}
 
-        {/* Scrollable Navigation Main Core Terminal */}
         <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6 scrollbar-none">
           <div>
             <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// Main Console</h3>
@@ -232,8 +287,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <div>
             <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// Integrations</h3>
             <div className="space-y-1">
-              <ChannelLink icon={<FiInstagram className="text-pink-500" />} name="Instagram" status="Active" />
-              <ChannelLink icon={<FiFacebook className="text-blue-500" />} name="Facebook" status="Setup" />
+              <ChannelLink icon={<FiInstagram className="text-pink-500" />} name="Instagram" status="Setup" />
+              
+              <ChannelLink 
+                icon={<FiFacebook className="text-blue-500" />} 
+                name="Facebook" 
+                status={facebookStatus} 
+                onClick={handleFacebookClick}
+              />
+              
               <ChannelLink 
                 icon={<FcGoogle />} 
                 name="Google Ads" 
@@ -271,7 +333,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </div>
         </div>
 
-        {/* User Profile Console Footer */}
         <div className="p-4 bg-neutral-950 border-t border-neutral-900 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 truncate">
             <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-neutral-200 text-xs shadow-inner">
