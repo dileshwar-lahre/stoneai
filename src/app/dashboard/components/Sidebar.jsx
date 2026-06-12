@@ -30,7 +30,6 @@ import {
 
 import { FcGoogle } from "react-icons/fc";
 
-// Reusable Sidebar Link Component
 function SidebarLink({ href, icon, name, count }) {
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -48,7 +47,6 @@ function SidebarLink({ href, icon, name, count }) {
         <span className="text-[18px]">{icon}</span>
         <span className="text-[13px] font-black uppercase tracking-wider">{name}</span>
       </div>
-
       {count && (
         <span className="bg-neutral-900 text-neutral-500 text-[9px] font-mono px-2 py-0.5 border border-neutral-800 rounded-md">
           {count}
@@ -58,7 +56,7 @@ function SidebarLink({ href, icon, name, count }) {
   );
 }
 
-// Channel Link Component with Hover Disconnect Mode
+// 📡 Fully Reactive Channel Component
 function ChannelLink({ icon, name, status, onClick }) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -75,21 +73,12 @@ function ChannelLink({ icon, name, status, onClick }) {
           {name}
         </span>
       </div>
-
       <div className="flex items-center gap-1.5">
         <div className={`w-1.5 h-1.5 rounded-full ${status === "Active" ? "bg-emerald-500 animate-pulse" : "bg-neutral-700"}`} />
         <span className={`text-[9px] uppercase font-black tracking-widest ${
-          status === "Active" 
-            ? isHovered 
-              ? "text-red-500 font-extrabold" 
-              : "text-emerald-400" 
-            : "text-neutral-500"
+          status === "Active" ? (isHovered ? "text-red-500 font-extrabold" : "text-emerald-400") : "text-neutral-500"
         }`}>
-          {status === "Active" 
-            ? isHovered 
-              ? "Disconnect" 
-              : "Linked" 
-            : "Setup"}
+          {status === "Active" ? (isHovered ? "Disconnect" : "Linked") : "Setup"}
         </span>
       </div>
     </div>
@@ -101,108 +90,120 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
   
   const [mounted, setMounted] = useState(false);
-  const [userRole, setUserRole] = useState("agency"); 
+  
+  const [userRole, setUserRole] = useState("owner"); 
+  const [displayName, setDisplayName] = useState("");
+  const [realName, setRealName] = useState(""); 
+  const [userPic, setUserPic] = useState("");
+  const [planName, setPlanName] = useState("NO ACTIVE PLAN");
+
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   
+  // 📡 CHANNEL CORES
   const [googleAdsStatus, setGoogleAdsStatus] = useState("Setup");
   const [facebookStatus, setFacebookStatus] = useState("Setup"); 
-  const [planName, setPlanName] = useState("Standard Tier");
 
-  // State Sync Effect (Safe & Fixed)
   useEffect(() => {
     setMounted(true);
-    
-    const storedSubscription = localStorage.getItem("digital_subscription");
-    if (storedSubscription) {
+
+    async function syncSidebarProfileCluster() {
       try {
-        const parsed = JSON.parse(storedSubscription);
-        if (parsed?.planName) setPlanName(parsed.planName);
-      } catch (e) {
-        console.log(e);
+        const res = await fetch("/api/user/profile", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const profileResult = await res.json();
+        
+        if (profileResult.success) {
+          const { user, profile } = profileResult;
+          
+          setUserRole(user.role || "owner");
+          setRealName(user.name || "Stonenox User");
+          setUserPic(user.picture || "");
+
+          if (user.role === "agency" && profile?.agencyName) {
+            setDisplayName(profile.agencyName);
+          } else if (user.role === "owner" && profile?.businessName) {
+            setDisplayName(profile.businessName);
+          } else if (user.role === "staff" && profile?.companyName) {
+            setDisplayName(profile.companyName);
+          }
+
+          // Checking your real database tokens/booleans flags
+          if (user.googleAdsConnected || user.googleAds?.status === "connected") {
+            setGoogleAdsStatus("Active");
+          } else {
+            setGoogleAdsStatus("Setup");
+          }
+
+          if (user.facebookConnected || user.facebook?.status === "connected") {
+            setFacebookStatus("Active");
+          } else {
+            setFacebookStatus("Setup");
+          }
+
+          const userId = user._id || user.id;
+          if (userId) {
+            try {
+              const subRes = await fetch("/api/get-digital-subscription", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId }),
+              });
+              const subResult = await subRes.json();
+              if (subResult.hasActivePlan && subResult.planDetails) {
+                setPlanName(`${subResult.planDetails.planName.toUpperCase()}`);
+              }
+            } catch (e) {
+              setPlanName("STANDARD TIER");
+            }
+          }
+        }
+      } catch (err) {
+        console.error("🚨 Sidebar Context Load Error:", err);
       }
     }
 
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const googleParam = urlParams.get("google_ads");
-      const facebookParam = urlParams.get("facebook");
-
-      const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(";").shift();
-        return null;
-      };
-
-      // Google Sync
-      const isGoogleCookieActive = getCookie("google_ads_status") === "connected";
-      if (googleParam === "connected" || isGoogleCookieActive) {
-        setGoogleAdsStatus("Active");
-      } else {
-        setGoogleAdsStatus("Setup");
-      }
-
-      // Facebook Sync (Persistent Cache Protection)
-      const isFbInCache = localStorage.getItem("fb_connected") === "true";
-      if (facebookParam === "connected") {
-        localStorage.setItem("fb_connected", "true");
-        setFacebookStatus("Active");
-      } else if (facebookParam === "disconnected") {
-        localStorage.removeItem("fb_connected");
-        setFacebookStatus("Setup");
-      } else if (isFbInCache) {
-        setFacebookStatus("Active");
-      } else {
-        setFacebookStatus("Setup");
-      }
-    }
+    syncSidebarProfileCluster();
   }, [pathname]);
 
-  useEffect(() => {
-    if (userRole === "agency") {
-      const dummyClients = [
-        { _id: "c1", name: "Rahul Sharma Logistics", email: "rahul@logistics.com" },
-        { _id: "c2", name: "Sharma Wellness Centre", email: "contact@sharmawell.com" },
-        { _id: "c3", name: "Raipur Tech Labs", email: "info@raipurtech.com" }
-      ];
-      setClients(dummyClients);
-      setSelectedClient(dummyClients[0]); 
-    }
-  }, [userRole]);
-
+  // 🔥 GOOGLE ADS ACTION MAPPING: Secure Connection & Safe Disconnection
   const handleGoogleAdsClick = (e) => {
     e.preventDefault();
     if (googleAdsStatus === "Active") {
-      router.push("/dashboard/analytics");
+      // ✅ User active h, toggle mode popup confirmation alert before dropping token node
+      if (confirm("Kya aap sach me apna Google Ads integration disconnect karna chahte hain?")) {
+        window.location.assign("/api/auth/google-ads/disconnect"); // Points directly to your disconnection engine
+      }
     } else {
       window.location.assign("/api/auth/google-ads/connect?trigger=manual");
     }
   };
 
-  // Facebook Connection + Disconnection Handler Loop
   const handleFacebookClick = (e) => {
     e.preventDefault();
-    
     if (facebookStatus === "Active") {
-      if (confirm("Kya aap sach me Facebook connection hatana chahte hain?")) {
-        localStorage.removeItem("fb_connected");
-        setFacebookStatus("Setup");
-        router.push("/dashboard");
-        console.log("❌ Facebook node context purged.");
+      if (confirm("Kya aap Facebook integration hatana chahte hain?")) {
+        window.location.assign("/api/auth/facebook/disconnect");
       }
     } else {
-      console.log("🚀 Initializing Facebook Authorization Stream...");
       window.location.assign("/api/auth/facebook/connect");
     }
   };
 
-  const handleClientChange = (client) => {
-    setSelectedClient(client);
-    setIsClientDropdownOpen(false);
-    router.push(`/dashboard/clients/${client._id}/profile`);
-  };
+  useEffect(() => {
+    if (userRole === "agency") {
+      const dummyClients = [
+        { _id: "c1", name: "Rahul Sharma Logistics" },
+        { _id: "c2", name: "Sharma Wellness Centre" },
+        { _id: "c3", name: "Raipur Tech Labs" }
+      ];
+      setClients(dummyClients);
+      setSelectedClient(dummyClients[0]); 
+    }
+  }, [userRole]);
 
   if (!mounted) return null;
 
@@ -222,6 +223,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0"
         }`}
       >
+        {/* HEADER BRANDING */}
         <div className="h-20 border-b border-neutral-900 flex items-center justify-between px-6 shrink-0 bg-neutral-950/30">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-center text-blue-500">
@@ -229,7 +231,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </div>
             <div>
               <h2 className="font-black text-white tracking-tight text-sm uppercase">Stonenox AI</h2>
-              <p className="text-[9px] text-neutral-500 font-black uppercase tracking-wider mt-0.5">{userRole} Node</p>
+              <p className="text-[9px] text-cyan-400 font-black uppercase tracking-wider mt-0.5">{userRole} Node</p>
             </div>
           </div>
           <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-xl bg-neutral-900/60 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-700 transition-all">
@@ -237,6 +239,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </button>
         </div>
 
+        {/* 🏢 AGENCY DROPDOWN */}
         {userRole === "agency" && (
           <div className="px-4 pt-4 border-b border-neutral-900 pb-4 shrink-0 bg-neutral-950/10">
             <p className="text-[9px] font-black text-neutral-500 uppercase tracking-[1.5px] mb-2 px-1">Active Pipeline Unit</p>
@@ -259,10 +262,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {clients.map((client) => (
                     <button
                       key={client._id}
-                      onClick={() => handleClientChange(client)}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-tight block truncate transition-all ${
-                        selectedClient?._id === client._id ? "text-blue-500 bg-neutral-900/60" : "text-neutral-400 hover:bg-neutral-900/20 hover:text-white"
-                      }`}
+                      onClick={() => {
+                        setSelectedClient(client);
+                        setIsClientDropdownOpen(false);
+                        router.push(`/dashboard/clients/${client._id}/profile`);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs font-black uppercase tracking-tight block truncate transition-all text-neutral-400 hover:bg-neutral-900/20 hover:text-white"
                     >
                       🏢 {client.name}
                     </button>
@@ -273,6 +278,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </div>
         )}
 
+        {/* NAVIGATION LINKS */}
         <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6 scrollbar-none">
           <div>
             <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// Main Console</h3>
@@ -284,26 +290,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </div>
           </div>
 
-          <div>
-            <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// Integrations</h3>
-            <div className="space-y-1">
-              <ChannelLink icon={<FiInstagram className="text-pink-500" />} name="Instagram" status="Setup" />
-              
-              <ChannelLink 
-                icon={<FiFacebook className="text-blue-500" />} 
-                name="Facebook" 
-                status={facebookStatus} 
-                onClick={handleFacebookClick}
-              />
-              
-              <ChannelLink 
-                icon={<FcGoogle />} 
-                name="Google Ads" 
-                status={googleAdsStatus} 
-                onClick={handleGoogleAdsClick} 
-              />
+          {/* 📡 INTEGRATIONS PANEL */}
+          {userRole !== "staff" && (
+            <div>
+              <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// Integrations</h3>
+              <div className="space-y-1">
+                <ChannelLink icon={<FiInstagram className="text-pink-500" />} name="Instagram" status="Setup" />
+                <ChannelLink icon={<FiFacebook className="text-blue-500" />} name="Facebook" status={facebookStatus} onClick={handleFacebookClick} />
+                <ChannelLink icon={<FcGoogle />} name="Google Ads" status={googleAdsStatus} onClick={handleGoogleAdsClick} />
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// CRM Pipeline</h3>
@@ -313,39 +310,42 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               <SidebarLink href="/dashboard/followups" icon={<FiCalendar />} name="Follow Ups" />
             </div>
           </div>
-
-          <div>
-            <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// Engine Core</h3>
-            <div className="space-y-1">
-              <SidebarLink href="/dashboard/social-posts" icon={<FiFileText />} name="Social Posts" />
-              <SidebarLink href="/dashboard/automation" icon={<FiActivity />} name="Automation" />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="px-4 text-[9px] font-black text-neutral-600 uppercase mb-2 tracking-[2px]">// System Log</h3>
-            <div className="space-y-1">
-              <SidebarLink href="/dashboard/billing" icon={<FiCreditCard />} name="Billing Center" />
-              <SidebarLink href="/dashboard/notifications" icon={<FiBell />} name="Alerts" />
-              <SidebarLink href="/dashboard/settings" icon={<FiSettings />} name="Settings" />
-              <SidebarLink href="/dashboard/support" icon={<FiHelpCircle />} name="Support Node" />
-            </div>
-          </div>
         </div>
 
+        {/* PROFILE BADGE INTERFACE */}
         <div className="p-4 bg-neutral-950 border-t border-neutral-900 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3 truncate">
-            <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-neutral-200 text-xs shadow-inner">
-              DL
-            </div>
-            <div className="truncate">
-              <span className="text-xs font-black block text-neutral-200 leading-none uppercase tracking-tight">Dileshwar Lahre</span>
-              <span className="text-[9px] block text-neutral-500 font-mono tracking-tight mt-1 uppercase">{planName}</span>
+          <div className="flex items-center gap-3 truncate w-[calc(100%-40px)]">
+            
+            {userPic ? (
+              <img src={userPic} alt="Avatar" className="w-9 h-9 rounded-xl border border-neutral-800 object-cover" />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-blue-500 text-xs shadow-inner uppercase shrink-0">
+                {realName ? realName.substring(0, 2) : "US"}
+              </div>
+            )}
+
+            <div className="truncate w-full">
+              <span className="text-xs font-black block text-neutral-200 leading-none uppercase tracking-tight truncate">
+                {realName || "Stonenox Member"}
+              </span>
+
+              <span className="text-[8px] block text-cyan-400 font-mono tracking-tight mt-1 uppercase font-bold truncate">
+                {planName}
+              </span>
+
+              {displayName && (
+                <span className="text-[7px] block text-neutral-500 uppercase tracking-tight mt-0.5 truncate">
+                  🏢 {displayName}
+                </span>
+              )}
             </div>
           </div>
-          <Link href="/dashboard/billing" className="w-7 h-7 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-700 flex items-center justify-center transition-all text-blue-500">
-            <FiZap size={13} className="animate-pulse" />
-          </Link>
+          
+          {userRole !== "staff" && (
+            <Link href="/dashboard/billing" className="w-7 h-7 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-700 flex items-center justify-center transition-all text-blue-500 shrink-0">
+              <FiZap size={13} className="animate-pulse" />
+            </Link>
+          )}
         </div>
       </aside>
     </>

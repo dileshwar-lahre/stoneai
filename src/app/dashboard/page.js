@@ -32,7 +32,7 @@ export default function DashboardHome() {
         const urlParams = new URLSearchParams(window.location.search);
         const adsParam = urlParams.get("google_ads");
 
-        // 2. Cookie Se Check Karo (Helper function inside effect to map headers)
+        // 2. Cookie Se Check Karo
         const getCookie = (name) => {
           if (typeof document === "undefined") return null;
           const value = `; ${document.cookie}`;
@@ -46,7 +46,7 @@ export default function DashboardHome() {
         // 🎯 Verification Conditional Validation Block
         if (adsParam === "connected" || isAdsCookieActive) {
           setGoogleAdsConnected(true);
-          setGoogleBudget("₹25,480"); // Active configuration standard budget dynamic injection
+          setGoogleBudget("₹25,480"); 
         } else {
           setGoogleAdsConnected(false);
           setGoogleBudget("₹0");
@@ -70,18 +70,18 @@ export default function DashboardHome() {
     fetchDashboardState();
   }, []);
 
-  // 🛡️ Intentional Click-Based Redirect for OAuth Setup (Strict Loop protection)
+  // 🛡️ Intentional Click-Based Redirect for OAuth Setup
   const handleGoogleConnectTrigger = () => {
     window.location.href = "/api/auth/google-ads/connect?trigger=manual";
   };
 
   // 🛠️ Dynamic Channel Map Engine
   const channels = useMemo(() => [
-    { name: "Instagram", icon: <FiInstagram size={18} />, connected: true, budget: "₹12,430", activeClass: "text-pink-500 hover:border-pink-500/40", action: null },
-    { name: "Facebook", icon: <FiFacebook size={18} />, connected: true, budget: "₹18,250", activeClass: "text-blue-500 hover:border-blue-500/40", action: null },
+    { name: "Instagram", icon: <FiInstagram size={16} />, connected: true, budget: "₹12,430", activeClass: "text-pink-500 hover:border-pink-500/40", action: null },
+    { name: "Facebook", icon: <FiFacebook size={16} />, connected: true, budget: "₹18,250", activeClass: "text-blue-500 hover:border-blue-500/40", action: null },
     { 
       name: "Google Ads", 
-      icon: <FcGoogle size={18} />, 
+      icon: <FcGoogle size={16} />, 
       connected: googleAdsConnected, 
       budget: googleBudget, 
       activeClass: googleAdsConnected 
@@ -117,89 +117,93 @@ export default function DashboardHome() {
   return (
     <div className="min-h-screen bg-[#000000] text-white relative font-sans overflow-x-hidden antialiased select-none">
       
-      {/* High-End Tech Aesthetics Ambient Glows */}
-      <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-cyan-500/5 blur-[130px] rounded-full pointer-events-none z-0" />
-      <div className="absolute bottom-[5%] left-[-10%] w-[400px] h-[400px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
+      {/* Ambient Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-cyan-500/5 blur-[100px] sm:blur-[130px] rounded-full pointer-events-none z-0" />
+      <div className="absolute bottom-[5%] left-[-10%] w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-blue-600/5 blur-[90px] sm:blur-[120px] rounded-full pointer-events-none z-0" />
 
-      <main className="relative z-10 px-6 md:px-12 pt-32 pb-16 max-w-[1400px] mx-auto">
+      {/* 🛠️ FIXED: px-2 on Mobile to push everything to the absolute left and right borders safely */}
+      <main className="relative z-10 px-2 sm:px-6 md:px-12 pt-24 sm:pt-32 pb-16 max-w-[1400px] mx-auto space-y-5">
         
         {/* TOP HEADER CONSOLE STATUS */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10 border-b border-white/5 pb-6">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/5 pb-4">
           
-          <div className="flex flex-col gap-2.5 w-full sm:w-auto">
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-500 block">
+          <div className="flex flex-col gap-2.5 w-full lg:w-auto">
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-neutral-500 block pl-0.5">
               Omnichannel Advertising Matrix Core //
             </span>
             
-            <div className="flex items-center gap-3 flex-wrap">
+            {/* Mobile Channels Grid: Solid Left Alignment */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:flex lg:items-center lg:gap-3">
               {channels.map((chan) => (
                 <div 
                   key={chan.name} 
                   onClick={chan.action ? chan.action : undefined}
-                  className={`flex items-center gap-3 bg-neutral-950 border border-neutral-900 p-3 rounded-xl transition-all duration-300 ${chan.activeClass}`}
-                  title={`${chan.name}: ${chan.connected ? `Linked (${chan.budget})` : "Click to initialize manual bridge token"}`}
+                  className={`flex items-center justify-between sm:justify-start gap-3 bg-neutral-950 border border-neutral-900 p-3 rounded-xl transition-all duration-300 ${chan.activeClass}`}
                 >
-                  <div className="flex items-center justify-center">
-                    {chan.icon}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center justify-center shrink-0">
+                      {chan.icon}
+                    </div>
+                    <span className="text-[11px] font-bold text-neutral-400 block sm:hidden truncate">{chan.name}</span>
                   </div>
                   
                   {chan.connected ? (
-                    <>
-                      <div className="w-px h-3 bg-neutral-800" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-px h-3 bg-neutral-800 hidden sm:block" />
                       <span className="font-mono text-neutral-300 text-[11px] font-bold">{chan.budget}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <div className="w-px h-3 bg-neutral-800" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-px h-3 bg-neutral-800 hidden sm:block" />
                       <span className="text-cyan-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                         <FiPlus size={10} /> Link
                       </span>
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    </>
+                    </div>
                   )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Core Action Command Nodes */}
-          <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-            <button className="h-10 px-4 rounded-xl bg-neutral-950 border border-neutral-900 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:border-neutral-700 transition-all active:scale-95">
+          {/* Action Buttons: Compact row alignment */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+            <button className="flex-1 sm:flex-none h-9 px-3 rounded-xl bg-neutral-950 border border-neutral-900 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:border-neutral-700 transition-all active:scale-95">
               <FiUpload size={12} /> Import
             </button>
-            <button className="h-10 px-4 rounded-xl bg-blue-600 text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
-              <FiDownload size={12} /> Export Matrix
+            <button className="flex-1 sm:flex-none h-9 px-3 rounded-xl bg-blue-600 text-white flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
+              <FiDownload size={12} /> Export
             </button>
           </div>
 
         </header>
 
         {/* DATA CONTROL SNAPSHOT BOX CONTAINER */}
-        <div className="w-full bg-neutral-950 border border-neutral-900 rounded-3xl p-6 mb-8 shadow-2xl">
+        <div className="w-full bg-neutral-950 border border-neutral-900 rounded-xl sm:rounded-3xl p-3.5 sm:p-6 shadow-2xl space-y-4">
           
           {/* TOOLBAR HEAD SYSTEMS */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
             
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full xl:max-w-md">
               <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={14} />
               <input
                 type="text"
-                placeholder="Query pipeline snapshot database records..."
+                placeholder="Query snapshot database records..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-11 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-700 transition-all font-medium"
               />
             </div>
 
-            {/* Segment Tab Selector Matrix */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
-              <div className="text-neutral-600 pr-1 hidden sm:block"><FiFilter size={12} /></div>
+            {/* Filter Tabs - Left aligned compact view */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 scrollbar-none">
+              <div className="text-neutral-600 pr-1 hidden sm:block shrink-0"><FiFilter size={12} /></div>
               {["All", "Instagram", "Facebook", "Google Ads"].map((src) => (
                 <button
                   key={src}
                   onClick={() => setSelectedSource(src)}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap border ${
+                  className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap border shrink-0 ${
                     selectedSource === src
                       ? "bg-white text-black border-white shadow-md"
                       : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700"
@@ -211,8 +215,8 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* METRICS RECEPTACLE RENDER TABLE */}
-          <div className="overflow-x-auto">
+          {/* 🖥️ DESKTOP VIEW: ORIGINAL TABLE */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-neutral-900 text-neutral-500 text-[9px] uppercase tracking-widest font-black">
@@ -226,27 +230,22 @@ export default function DashboardHome() {
               <tbody className="text-xs divide-y divide-neutral-900/20 font-medium">
                 {filteredLeads.length > 0 ? (
                   filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-neutral-900/10 transition-all group">
-                      
+                    <tr key={lead.id} className="hover:bg-white/[0.01] transition-all group">
                       <td className="py-4 px-4">
                         <div className="flex">
-                          <span 
-                            className={`p-2 rounded-xl border text-sm flex items-center justify-center ${
-                              lead.source === "Instagram" 
-                                ? "bg-pink-950/10 border-pink-900/20 text-pink-400" 
-                                : lead.source === "Facebook"
-                                ? "bg-blue-950/10 border-blue-900/20 text-blue-400"
-                                : "bg-neutral-900 border-neutral-800 text-amber-400"
-                            }`}
-                            title={lead.source}
-                          >
+                          <span className={`p-2 rounded-xl border text-sm flex items-center justify-center ${
+                            lead.source === "Instagram" 
+                              ? "bg-pink-950/10 border-pink-900/20 text-pink-400" 
+                              : lead.source === "Facebook"
+                              ? "bg-blue-950/10 border-blue-900/20 text-blue-400"
+                              : "bg-neutral-900 border-neutral-800 text-amber-400"
+                          }`}>
                             {lead.source === "Instagram" && <FiInstagram size={14} />}
                             {lead.source === "Facebook" && <FiFacebook size={14} />}
                             {lead.source === "Google Ads" && <FcGoogle size={14} />}
                           </span>
                         </div>
                       </td>
-
                       <td className="py-4 px-4 font-bold text-white group-hover:text-blue-400 transition-all">{lead.name}</td>
                       <td className="py-4 px-4 text-neutral-400 font-mono tracking-tight">{lead.phone}</td>
                       <td className="py-4 px-4 text-neutral-300 max-w-xs truncate">{lead.message}</td>
@@ -263,23 +262,60 @@ export default function DashboardHome() {
               </tbody>
             </table>
           </div>
+
+          {/* 📱 MOBILE VIEW: EXTRA LEFT-ALIGNED COMPACT LIST CARDS */}
+          <div className="block md:hidden space-y-2">
+            {filteredLeads.length > 0 ? (
+              filteredLeads.map((lead) => (
+                <div key={lead.id} className="bg-neutral-900/30 border border-white/[0.03] rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`p-1.5 rounded-lg border text-xs flex items-center justify-center shrink-0 ${
+                        lead.source === "Instagram" 
+                          ? "bg-pink-950/10 border-pink-900/20 text-pink-400" 
+                          : lead.source === "Facebook"
+                          ? "bg-blue-950/10 border-blue-900/20 text-blue-400"
+                          : "bg-neutral-900 border-neutral-800 text-amber-400"
+                      }`}>
+                        {lead.source === "Instagram" && <FiInstagram size={12} />}
+                        {lead.source === "Facebook" && <FiFacebook size={12} />}
+                        {lead.source === "Google Ads" && <FcGoogle size={12} />}
+                      </span>
+                      <span className="text-xs font-bold text-white truncate">{lead.name}</span>
+                    </div>
+                    <span className="text-[9px] text-neutral-600 font-mono tracking-tight shrink-0">{lead.date}</span>
+                  </div>
+                  
+                  <div className="text-[11px] space-y-0.5 border-l border-white/5 pl-2 ml-1">
+                    <p className="text-neutral-400 font-mono text-[10px]">{lead.phone}</p>
+                    <p className="text-neutral-300 leading-normal text-xs">{lead.message}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-neutral-600 font-mono uppercase text-[9px] tracking-widest">
+                // No active tracking nodes matched query
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* CORE ANALYTICAL PANEL FOOTER */}
-        <div className="w-full bg-neutral-950 border border-neutral-900 rounded-3xl p-5 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-          <div className="flex items-center gap-4">
-            <div className="w-9 h-9 rounded-xl bg-blue-950/20 border border-blue-900/40 text-blue-500 flex items-center justify-center shadow-inner">
-              <FiTrendingUp size={16} />
+        <div className="w-full bg-neutral-950 border border-neutral-900 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="w-8 h-8 rounded-lg bg-blue-950/20 border border-blue-900/40 text-blue-500 flex items-center justify-center shadow-inner shrink-0">
+              <FiTrendingUp size={14} />
             </div>
-            <div>
-              <h4 className="text-[11px] font-black text-neutral-400 uppercase tracking-wider leading-relaxed">
+            <div className="min-w-0">
+              <h4 className="text-[9px] sm:text-[11px] font-black text-neutral-400 uppercase tracking-wider leading-tight">
                 Connect your secure ad accounts to pipeline localized analytical lead streams instantly_
               </h4>
             </div>
           </div>
 
-          {/* Technical Micro Vector Chart */}
-          <div className="w-36 h-8 opacity-40 pr-2">
+          {/* Micro Vector Chart */}
+          <div className="w-36 h-8 opacity-40 pr-2 hidden md:block shrink-0">
             <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
               <path
                 d="M0,25 Q15,22 30,12 T60,18 T90,3 T100,5"
@@ -304,6 +340,12 @@ export default function DashboardHome() {
         </div>
 
       </main>
+
+      {/* Global CSS Style */}
+      <style jsx global>{`
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 }

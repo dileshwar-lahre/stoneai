@@ -1,23 +1,23 @@
-import Navbar from './components/Navbar'
-import './globals.css'
+"use client"; // 🚨 Layout ko client component bana diya taaki SessionProvider direct chal sake
 
-export const metadata = {
-  title: 'MDPAI - Advanced CRM',
-  description: 'AI Driven Lead Management',
-}
+import { SessionProvider } from "next-auth/react"; // 🔥 Direct Next-Auth se import kiya
+import Navbar from './components/Navbar';
+import './globals.css';
+import Footer from "./components/Footer";
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      {/* 1. 'suppressHydrationWarning' jodh diya hai taaki browser extensions (cz-shortcut) ki wajah se build crash na ho.
-          2. Layout structure ekdum clean lock kar diya hai.
-      */}
       <body className="bg-black text-white antialiased" suppressHydrationWarning>
-        <Navbar />
-        <main>
-          {children}
-        </main>
+        {/* 🚀 Bina kisi external file ke direct wrapper lag gaya! */}
+        <SessionProvider>
+          <Navbar />
+          <main>
+            {children}
+          </main>
+          <Footer/>
+        </SessionProvider>
       </body>
     </html>
-  )
+  );
 }
