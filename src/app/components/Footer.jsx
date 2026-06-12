@@ -8,13 +8,14 @@ export default function FooterCTA() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#000000] text-white pt-24 pb-12 border-t border-white/5 relative overflow-hidden antialiased select-none">
+    /* 🛠️ FIXED: position 'relative' aur 'w-full' lagaya taaki element upar na bhaage */
+    <footer className="w-full relative bg-[#000000] text-white pt-24 pb-12 border-t border-white/5 overflow-hidden antialiased select-none block clear-both">
       
       {/* BACKGROUND DECK GLOW */}
       <div className="absolute top-0 left-1/4 w-[300px] h-[300px] bg-white/[0.01] blur-[100px] rounded-full pointer-events-none" />
 
       {/* CTA SECTION */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col items-start justify-start w-full">
 
           {/* LEFT CARD - Classic Clean Balanced Look */}
@@ -43,7 +44,7 @@ export default function FooterCTA() {
       </div>
 
       {/* FOOTER LINKS */}
-      <div className="max-w-7xl mx-auto px-6 mt-20 border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="max-w-7xl mx-auto px-6 mt-20 border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
         
         {/* Navigation row aligned left */}
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-neutral-500 text-xs font-black uppercase tracking-widest w-full md:w-auto text-left justify-start">
