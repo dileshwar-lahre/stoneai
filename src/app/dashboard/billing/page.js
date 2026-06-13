@@ -8,6 +8,11 @@ import { FaWhatsapp } from "react-icons/fa6";
 export default function BillingPage() {
   const [userRole, setUserRole] = useState(null); // owner, agency, staff
   const [userId, setUserId] = useState(null);
+  
+  // 🎯 LIVE LOGGED-IN USER PROFILE STATES (NO STATIC DATA)
+  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
   
@@ -52,9 +57,13 @@ export default function BillingPage() {
         const json = await res.json();
         
         if (json.success && json.user) {
-          // Dynamic layout refresh using database role key safely
+          // Dynamic layout refresh using database context keys
           setUserRole(json.user.role || "owner");
           setUserId(json.user._id || json.user.id);
+          
+          // 🎯 Dynamic extraction of active session info
+          setUserEmail(json.user.email || "");
+          setUserName(json.user.name || "Ecosystem Partner");
         } else {
           window.location.href = "/login";
         }
@@ -67,7 +76,7 @@ export default function BillingPage() {
     fetchUserRoleContext();
   }, []);
 
-  // 🧠 HOSTINGER PRICING MATH ENGINE
+  // 🧠 PRICING MATH ENGINE
   useEffect(() => {
     if (!userRole) return;
 
@@ -88,7 +97,10 @@ export default function BillingPage() {
       staffCost: extraStaffCost * months,
       whatsappCost: whatsappCost * months
     });
-    setFinalPrice(Math.round(calculatedTotal));
+
+    // 🚀 TESTING MODE MANDATE: Dynamic parameters show honge par payable check force karke ₹1 lock kar diya hai
+    setFinalPrice(1);
+
   }, [userRole, months, whatsappReporting, staffCount, agencyBasePlan, ownerBasePlan]);
 
   // Handle Deploy Button Click -> Open Invoice Popup
@@ -109,8 +121,9 @@ export default function BillingPage() {
 
       const clientKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "YAHAN_APNI_RZP_LIVE_KEY_ID_DIRECT_PASTE_KARO";
       const planNameString = userRole === "agency" ? `Agency Bundle (${agencyBasePlan} Clients)` : `Owner Plan (Base ₹${ownerBasePlan})`;
+      const selectedPlanKey = userRole === "agency" ? agencyBasePlan : ownerBasePlan;
 
-      // 1. Hit your working order generator route directly
+      // 1. Hit your working order generator route directly (Passing ₹1 payload)
       const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,8 +142,8 @@ export default function BillingPage() {
         description: `Payment for ${planNameString}`,
         order_id: data.order_id,
         prefill: {
-          name: "Dileshwar Lahre",
-          email: "support@stonenox.com",
+          name: userName,
+          email: userEmail, // 🎯 Active Login Email dynamically goes to Razorpay window
           contact: "9131460470",
           method: "upi"
         },
@@ -147,7 +160,7 @@ export default function BillingPage() {
           }
         },
         handler: async function (response) {
-          // 3. Fire payload data back to your custom callback handler verify verification matrix
+          // 3. Fire dynamic login data payload straight back to your verify API endpoint
           const verifyRes = await fetch("/api/verify-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -156,18 +169,19 @@ export default function BillingPage() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               userId,
-              role: userRole,
-              planKey: userRole === "agency" ? `agency_${agencyBasePlan}` : `owner_${ownerBasePlan}`,
+              userEmail,               // 🎯 100% Dynamic Logged-In email passed to database & Resend
+              userName,                // 🎯 Dynamic Logged-In user name
+              planKey: selectedPlanKey,
               planName: planNameString,
-              price: finalPrice,
+              price: finalPrice,       // ₹1
               durationDays: months * 30,
-              meta: { whatsappReporting, staffCount }
+              planType: userRole       // owner ya agency role tracker status
             }),
           });
           
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
-            alert(`Paisa Aa Gaya Bhai! Workspace Plan Active 🎉`);
+            alert(`Paisa Aa Gaya Bhai! User Table Saved & Mail Delivered 🎉`);
             window.location.href = "/dashboard";
           } else {
             alert("Verification Failed: " + verifyData.error);
@@ -282,8 +296,7 @@ export default function BillingPage() {
                   </div>
                 </div>
 
-                <div onClick={() => setOwnerBasePlan("2999")} className={`border rounded-2xl p-6 cursor-pointer bg-[#0c0f17] transition-all ${ownerBasePlan === "2999" ? "border-purple-600 ring-2 ring-purple-600/20 shadow-2xl" : "border-neutral-900 hover:border-neutral-700"}`}
-                >
+                <div onClick={() => setOwnerBasePlan("2999")} className={`border rounded-2xl p-6 cursor-pointer bg-[#0c0f17] transition-all ${ownerBasePlan === "2999" ? "border-purple-600 ring-2 ring-purple-600/20 shadow-2xl" : "border-neutral-900 hover:border-neutral-700"}`}>
                   <h3 className="text-sm font-black uppercase text-neutral-400 tracking-wider">Enterprise</h3>
                   <div className="mt-4 flex items-baseline gap-1"><span className="text-2xl font-black">₹2,999</span><span className="text-xs text-neutral-500 font-medium">/mo</span></div>
                   <div className="mt-6 space-y-3 text-xs text-neutral-400 font-bold border-t border-neutral-900 pt-4">
@@ -350,7 +363,7 @@ export default function BillingPage() {
 
           <div className="text-center py-2">
             <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest block">Total Checkout Price</span>
-            <h2 className="text-4xl font-black font-mono text-white mt-1">₹{finalPrice.toLocaleString("en-IN")}</h2>
+            <h2 className="text-4xl font-black font-mono text-white mt-1">₹1</h2> {/* Force display for local testing engine review */}
           </div>
 
           <button onClick={handleDeployContract} className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-purple-600/10 flex items-center justify-center gap-2 group">
@@ -380,7 +393,7 @@ export default function BillingPage() {
               {months >= 6 && <div className="flex justify-between text-purple-400 border-b border-neutral-900 pb-2"><span>Cycle Discount Applied:</span><span className="font-mono">-{months === 6 ? "10%" : "20%"} OFF</span></div>}
               <div className="bg-black/40 border border-neutral-900 p-4 rounded-xl flex justify-between items-center text-sm font-black text-white mt-6">
                 <span className="uppercase text-[10px] tracking-wider text-neutral-500">Gross Payable Amount</span>
-                <span className="text-xl text-purple-400 font-mono">₹finalPrice ₹{finalPrice.toLocaleString("en-IN")}</span>
+                <span className="text-xl text-purple-400 font-mono">₹1</span>
               </div>
             </div>
 
