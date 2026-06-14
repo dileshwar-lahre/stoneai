@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { Resend } from "resend";
-import { connectDB } from "@/lib/mongodb"; // 🎯 Apna correct connection path check kar lena bhai
-import User from "@/models/User";         // Tere updated model ka import
+
+// 🎯 ABSOLUTE REVERSE PATH FIX (Bina kisi alias issue ke)
+import { connectDB } from "../../../lib/mongodb"; 
+import User from "../../../models/User";// Ya fir niche wala use karo agar src ke andar hai:
 
 // ⚡ RESEND INITIALIZATION
 const resend = new Resend(process.env.RESEND_API_KEY);
