@@ -16,9 +16,8 @@ export async function POST(request) {
   try {
     const { amount } = await request.json();
 
-    // 1. Fetch from everywhere safely (Hardcoded strings ya environment strings)
-    // Agars tumne direct string likha hai toh wahi utha lega, nahi toh env se padhega
-    const rawKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "YAHAN_AGAR_HARDCODE_HAI_TOH_APNI_ID_DALO";
+    // 🔒 SECURE SERVER-SIDE ENV FETCH ENGINE (Removed NEXT_PUBLIC prefix for security)
+    const rawKeyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "YAHAN_AGAR_HARDCODE_HAI_TOH_APNI_ID_DALO";
     const rawKeySecret = process.env.RAZORPAY_KEY_SECRET || "YAHAN_APNI_SECRET_KEY_DALO";
 
     const keyId = rawKeyId?.trim();
@@ -59,7 +58,7 @@ export async function POST(request) {
     }
 
     const options = {
-      amount: Math.round(cleanAmount * 100), // Paise
+      amount: Math.round(cleanAmount * 100), // Pure Paise transformation compliance
       currency: "INR",
       receipt: `receipt_diag_${Date.now()}`,
     };
@@ -68,7 +67,7 @@ export async function POST(request) {
     try {
       const order = await razorpay.orders.create(options);
       
-      // Agar control yahan tak aaya matlab APNI CODES AUR CONFIGURATION 100% PERFECT HAIN!
+      // Control yahan tak aaya matlab APNI CODES AUR CONFIGURATION 100% PERFECT HAIN!
       diagnosisReport.razorpayServerConnection = "🚀 SUCCESS: Keys are 100% Valid. Order Created!";
       
       return NextResponse.json({ 

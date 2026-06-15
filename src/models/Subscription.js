@@ -10,24 +10,23 @@ const SubscriptionSchema = new mongoose.Schema(
     },
 
     role: {
-      type: String,
-      enum: ["owner", "agency"],
+      type: String, // 🔥 FIXED: Removed strict enum so it can accept 'basic', 'premium', 'trial' dynamic keys seamlessly
       required: true,
     },
 
     planKey: {
       type: String,
-      default: "trial",
+      default: "trial", // 'trial', 'basic', 'premium'
     },
 
     planName: {
       type: String,
-      default: "7 Days Free Trial",
+      default: "7 Days Live Trial Plan",
     },
 
     price: {
       type: Number,
-      default: 0,
+      default: 1, // Default updated to ₹1 for live transaction drive verification
     },
 
     status: {
@@ -66,27 +65,44 @@ const SubscriptionSchema = new mongoose.Schema(
       default: false,
     },
 
+    // 📊 FIXED: Changed sub-fields types to Mixed/String so they safely record text formatting limits
     limits: {
       channels: {
-        type: Number,
-        default: 3,
+        type: mongoose.Schema.Types.Mixed,
+        default: "3 Social Channels",
       },
-
+      postsPerMonth: {
+        type: mongoose.Schema.Types.Mixed,
+        default: "10 Posts / Month",
+      },
+      crmAccess: {
+        type: mongoose.Schema.Types.Mixed,
+        default: "Basic CRM Access",
+      },
+      seo: {
+        type: mongoose.Schema.Types.Mixed,
+        default: "Basic SEO",
+      },
+      smo: {
+        type: mongoose.Schema.Types.Mixed,
+        default: "Basic SMO",
+      },
+      adsManagement: {
+        type: mongoose.Schema.Types.Mixed,
+        default: "Basic Ads Setup",
+      },
       staffPerOwner: {
         type: Number,
         default: 0,
       },
-
       clients: {
         type: Number,
         default: 0,
       },
-
       staffPerClient: {
         type: Number,
         default: 0,
       },
-
       totalStaff: {
         type: Number,
         default: 0,

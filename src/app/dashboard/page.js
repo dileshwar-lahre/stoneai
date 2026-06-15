@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation"; 
 import {
   FiInstagram,
   FiFacebook,
@@ -14,25 +15,44 @@ import {
 import { FcGoogle } from "react-icons/fc";
 
 export default function DashboardHome() {
+  const router = useRouter();
+
   // 📊 Dynamic State Management Core Node
   const [googleAdsConnected, setGoogleAdsConnected] = useState(false);
   const [googleBudget, setGoogleBudget] = useState("₹0");
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sessionUser, setSessionUser] = useState(null);
 
   // Search & Filter Matrix Parameters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSource, setSelectedSource] = useState("All");
 
   useEffect(() => {
-    // 📡 Data Sync Logic & Cookie Parsing Framework
     const fetchDashboardState = async () => {
       try {
-        // 1. URL Se Check Karo
-        const urlParams = new URLSearchParams(window.location.search);
-        const adsParam = urlParams.get("google_ads");
+        // ==========================================================
+        // 🔒 REAL-TIME SUBSCRIPTION LOCK LAYER (Loop Destroyer)
+        // ==========================================================
+        const response = await fetch("/api/user/profile", { cache: "no-store" });
+        const sessionData = await response.json();
 
-        // 2. Cookie Se Check Karo
+        // 🚨 Check 1: Agar user logged in hi nahi hai, tabhi use /login bhejo
+        if (!sessionData || !sessionData.success) {
+          window.location.href = "/login";
+          return;
+        }
+
+        // 🚨 Check 2: Agar user logged in hai PAR uske paas plan nahi hai, toh billing par bhejo!
+        if (!sessionData.hasPlan) {
+          console.log("ℹ️ [FRONTEND BYPASS]: Active subscription missing. Routing to billing pipeline.");
+          router.push("/dashboard/billing");
+          return;
+        }
+
+        setSessionUser(sessionData.user);
+
+        // 📡 Google Ads Cookie Tracking Logic
         const getCookie = (name) => {
           if (typeof document === "undefined") return null;
           const value = `; ${document.cookie}`;
@@ -41,9 +61,10 @@ export default function DashboardHome() {
           return null;
         };
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const adsParam = urlParams.get("google_ads");
         const isAdsCookieActive = getCookie("google_ads_status") === "connected";
 
-        // 🎯 Verification Conditional Validation Block
         if (adsParam === "connected" || isAdsCookieActive) {
           setGoogleAdsConnected(true);
           setGoogleBudget("₹25,480"); 
@@ -60,15 +81,16 @@ export default function DashboardHome() {
           { id: 4, name: "Priya Patel", phone: "+91 88119-XXXXX", message: "SEO Optimization packages", source: "Facebook", date: "2 days ago" },
           { id: 5, name: "Amit Lahre", phone: "+91 91314-XXXXX", message: "Google Ads dynamic lead payload", source: "Google Ads", date: "3 days ago" },
         ]);
+
       } catch (err) {
-        console.error("Dashboard core tracking failed:", err);
+        console.error("❌ Dashboard core tracking failed:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardState();
-  }, []);
+  }, [router]);
 
   // 🛡️ Intentional Click-Based Redirect for OAuth Setup
   const handleGoogleConnectTrigger = () => {
@@ -91,7 +113,7 @@ export default function DashboardHome() {
     },
   ], [googleAdsConnected, googleBudget]);
 
-  // 🔍 Advanced Cryptographic Filtering Framework
+  // 🔍 Advanced Filtering Framework
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchesSearch =
@@ -109,7 +131,7 @@ export default function DashboardHome() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#000000] text-white flex items-center justify-center font-mono text-[11px] tracking-widest uppercase">
-        // Syncing analytical matrix nodes...
+        // Synchronizing secure client session matrices...
       </div>
     );
   }
@@ -121,7 +143,6 @@ export default function DashboardHome() {
       <div className="absolute top-[-10%] right-[-5%] w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-cyan-500/5 blur-[100px] sm:blur-[130px] rounded-full pointer-events-none z-0" />
       <div className="absolute bottom-[5%] left-[-10%] w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-blue-600/5 blur-[90px] sm:blur-[120px] rounded-full pointer-events-none z-0" />
 
-      {/* 🛠️ FIXED: px-2 on Mobile to push everything to the absolute left and right borders safely */}
       <main className="relative z-10 px-2 sm:px-6 md:px-12 pt-24 sm:pt-32 pb-16 max-w-[1400px] mx-auto space-y-5">
         
         {/* TOP HEADER CONSOLE STATUS */}
@@ -129,10 +150,9 @@ export default function DashboardHome() {
           
           <div className="flex flex-col gap-2.5 w-full lg:w-auto">
             <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-neutral-500 block pl-0.5">
-              Omnichannel Advertising Matrix Core //
+              Welcome back, {sessionUser?.name || "Operator"} // Core Advertising Node
             </span>
             
-            {/* Mobile Channels Grid: Solid Left Alignment */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:flex lg:items-center lg:gap-3">
               {channels.map((chan) => (
                 <div 
@@ -167,7 +187,6 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* Action Buttons: Compact row alignment */}
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
             <button className="flex-1 sm:flex-none h-9 px-3 rounded-xl bg-neutral-950 border border-neutral-900 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:border-neutral-700 transition-all active:scale-95">
               <FiUpload size={12} /> Import
@@ -182,9 +201,7 @@ export default function DashboardHome() {
         {/* DATA CONTROL SNAPSHOT BOX CONTAINER */}
         <div className="w-full bg-neutral-950 border border-neutral-900 rounded-xl sm:rounded-3xl p-3.5 sm:p-6 shadow-2xl space-y-4">
           
-          {/* TOOLBAR HEAD SYSTEMS */}
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-            
             <div className="relative w-full xl:max-w-md">
               <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={14} />
               <input
@@ -196,7 +213,6 @@ export default function DashboardHome() {
               />
             </div>
 
-            {/* Filter Tabs - Left aligned compact view */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 scrollbar-none">
               <div className="text-neutral-600 pr-1 hidden sm:block shrink-0"><FiFilter size={12} /></div>
               {["All", "Instagram", "Facebook", "Google Ads"].map((src) => (
@@ -215,7 +231,7 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* 🖥️ DESKTOP VIEW: ORIGINAL TABLE */}
+          {/* DESKTOP TABLE */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -263,7 +279,7 @@ export default function DashboardHome() {
             </table>
           </div>
 
-          {/* 📱 MOBILE VIEW: EXTRA LEFT-ALIGNED COMPACT LIST CARDS */}
+          {/* MOBILE VIEW */}
           <div className="block md:hidden space-y-2">
             {filteredLeads.length > 0 ? (
               filteredLeads.map((lead) => (
@@ -285,7 +301,6 @@ export default function DashboardHome() {
                     </div>
                     <span className="text-[9px] text-neutral-600 font-mono tracking-tight shrink-0">{lead.date}</span>
                   </div>
-                  
                   <div className="text-[11px] space-y-0.5 border-l border-white/5 pl-2 ml-1">
                     <p className="text-neutral-400 font-mono text-[10px]">{lead.phone}</p>
                     <p className="text-neutral-300 leading-normal text-xs">{lead.message}</p>
@@ -314,7 +329,6 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* Micro Vector Chart */}
           <div className="w-36 h-8 opacity-40 pr-2 hidden md:block shrink-0">
             <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
               <path
@@ -341,7 +355,6 @@ export default function DashboardHome() {
 
       </main>
 
-      {/* Global CSS Style */}
       <style jsx global>{`
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
