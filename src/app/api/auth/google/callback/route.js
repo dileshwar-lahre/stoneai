@@ -4,14 +4,17 @@ import { NextResponse } from "next/server";
 import { connectDB } from "../../../../../lib/mongodb";
 import User from "../../../../../models/User";
 import { createToken } from "../../../../../lib/auth";
-import { Resend } from "resend"; // Resend initialization ready for deployment
+import { Resend } from "resend"; 
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET(req) {
-  // ⚡ DYNAMIC DOMAIN DETECTOR ENGINE (Local me local chalega, production me live url)
+  // ⚡ DYNAMIC DOMAIN DETECTOR ENGINE
   const currentOrigin = req.nextUrl.origin; 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || currentOrigin;
+
+  // Check if there's a custom callback redirect target (e.g. publish.stonenox.com)
+  const customRedirectUrl = req.nextUrl.searchParams.get("callbackUrl");
 
   try {
     await connectDB();
@@ -34,7 +37,7 @@ export async function GET(req) {
           code,
           client_id: process.env.GOOGLE_CLIENT_ID || "",
           client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
-          redirect_uri: `${baseUrl}/api/auth/google/callback`, // 🎯 Exact dynamic callback matching console config
+          redirect_uri: `${baseUrl}/api/auth/google/callback`, 
           grant_type: "authorization_code",
         }),
       }
@@ -63,7 +66,7 @@ export async function GET(req) {
       return NextResponse.redirect(`${baseUrl}/login`);
     }
 
-    // 🔍 Database Sync Block (Email normalization included)
+    // 🔍 Database Sync Block
     let user = await User.findOne({
       email: userData.email.toLowerCase(),
     });
@@ -96,7 +99,7 @@ export async function GET(req) {
     }
 
     // ==========================================================
-    // 📧 EMAIL DISPATCH ENGINE (Isolating mail engine to prevent pipeline crashes)
+    // 📧 EMAIL DISPATCH ENGINE
     // ==========================================================
     if (isNewUser) {
       try {
@@ -125,16 +128,24 @@ export async function GET(req) {
 
     const token = createToken(user);
 
-    const nextPath = user.isOnboarded
-      ? "/dashboard/profile"
-      : "/onboarding";
+    // Determine final target path
+    const nextPath = user.isOnboarded ? "/dashboard/profile" : "/onboarding";
+    
+    // Agar custom callback URL (jaise publish.stonenox.com) hai, toh wahan redirect karo, warna default pe
+    let finalRedirectUrl = `${baseUrl}${nextPath}`;
+    if (customRedirectUrl) {
+      // Ensure cross-domain safety for publish.stonenox.com
+      finalRedirectUrl = `${customRedirectUrl.startsWith('http') ? customRedirectUrl : baseUrl + customRedirectUrl}`;
+    }
 
-    const response = NextResponse.redirect(`${baseUrl}${nextPath}`);
+    const response = NextResponse.redirect(finalRedirectUrl);
 
+    // Cookie settings for cross-domain usage (domain=.stonenox.com set kiya hai taaki publish aur www dono par token share ho jaye)
     response.cookies.set("mdp_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      domain: process.env.NODE_ENV === "production" ? ".stonenox.com" : undefined,
       maxAge: 60 * 60 * 24 * 30,
       path: "/",
     });
@@ -142,7 +153,6 @@ export async function GET(req) {
     return response;
   } catch (error) {
     console.error("GOOGLE AUTH ERROR ❌", error);
-    // 🔥 Absolute safe fallback: Kabhi bhi localhost par crash nahi hoga live server me!
     return NextResponse.redirect(`${baseUrl}/login`);
   }
 }
